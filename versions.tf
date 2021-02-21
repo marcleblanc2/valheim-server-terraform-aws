@@ -3,9 +3,9 @@ terraform {
     required_version = "~> 0.14"
 
     backend "s3" {
-        bucket  = local.terraform_backend_s3_bucket
-        key     = local.terraform_backend_s3_key
-        region  = local.region
+        bucket  = "valheim-server-terraform-state"
+        key     = "terraform.tfstate"
+        region  = "us-west-2"
         encrypt = true
     }
 
