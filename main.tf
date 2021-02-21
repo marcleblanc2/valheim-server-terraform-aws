@@ -41,6 +41,30 @@ resource "aws_subnet" "valheim-server-public-subnet" {
     vpc_id                          = aws_vpc.valheim-server-vpc.id
 
 }
+
+resource "aws_internet_gateway" "valheim-server-internet-gateway" {
+    
+    vpc_id                          = aws_vpc.valheim-server-vpc.id
+
+}
+
+resource "aws_route_table" "valheim-server-internet-gateway-route-table" {
+
+    vpc_id                          = aws_vpc.valheim-server-vpc.id
+
+    route {
+        cidr_block                  = "0.0.0.0/0"
+        gateway_id                  = aws_internet_gateway.valheim-server-internet-gateway.id
+    }
+}
+
+resource "aws_route_table_association" "valheim-server-internet-gateway-route-table-association" {
+
+    subnet_id                       = aws_subnet.valheim-server-public-subnet.id
+    route_table_id                  = aws_route_table.valheim-server-internet-gateway-route-table.id
+
+}
+
 resource "aws_security_group" "valheim-server-security-group" {
     
     name                            = "valheim-server-security-group"
@@ -62,6 +86,29 @@ resource "aws_security_group" "valheim-server-security-group" {
         protocol                    = "udp"
         cidr_blocks                 = ["0.0.0.0/0"]
     }
+
+    ingress {
+        description                 = "SSH from the house"
+        from_port                   = 22
+        to_port                     = 22
+        protocol                    = "tcp"
+        cidr_blocks                 = local.home-ip-address-list
+    }
+
+    ingress {
+        description                 = "Ping from the house"
+        from_port                   = 8
+        to_port                     = -1
+        protocol                    = "icmp"
+        cidr_blocks                 = local.home-ip-address-list
+    }
+
+}
+
+resource "aws_key_pair" "valheim-server-ssh-keypair" {
+  
+    key_name                        = local.ssh-keypair-name
+    public_key                      = local.ssh-keypair-public-key
 
 }
 
@@ -96,6 +143,7 @@ resource "aws_instance" "valheim-server-ec2-instance" {
 
     ami                             = data.aws_ami.amazon-linux-2.id
     instance_type                   = "t2.micro"
+    key_name                        = local.ssh-keypair-name
     subnet_id                       = aws_subnet.valheim-server-public-subnet.id
     user_data                       = data.template_file.user-data-init.rendered
     vpc_security_group_ids          = [aws_security_group.valheim-server-security-group.id]
