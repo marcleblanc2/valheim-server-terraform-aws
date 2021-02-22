@@ -20,4 +20,7 @@ locals {
     valheim-server-world-password                   = ""
     valheim-server-public                           = 0
 
+    route53-zone-id                                 = ""
+    route53-hostname                                = ""
+
 }

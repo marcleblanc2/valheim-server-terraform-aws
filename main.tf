@@ -129,7 +129,6 @@ data "aws_ami" "amazon-linux-2" {
 
 }
 
-
 data "template_file" "user-data-init" {
 
     template                        = file("user-data.sh")
@@ -154,7 +153,14 @@ resource "aws_instance" "valheim-server-ec2-instance" {
 
 }
 
+resource "aws_route53_record" "valheim-server-route53-record" {
 
-# Domain name
+    zone_id                         = local.route53-zone-id
+    name                            = local.route53-hostname
+    type                            = "CNAME"
+    ttl                             = "60"
+    records                         = [aws_instance.valheim-server-ec2-instance.public_dns] 
+
+}
 
 # Storage?
