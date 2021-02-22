@@ -63,45 +63,97 @@ sudo mkdir /steam
 echo_msg "wget -P /steam http://media.steampowered.com/installer/steamcmd_linux.tar.gz to download steamcmd"
 wget -P /steam http://media.steampowered.com/installer/steamcmd_linux.tar.gz
 
-echo_msg "ls -hAl /steam to show that steamcmd_linux.tar.gz has been downloaded"
-ls -hAl /steam
-
 echo_msg "tar -xvzf steamcmd_linux.tar.gz to unpack steamcmd"
 tar -xvzf /steam/steamcmd_linux.tar.gz -C /steam
 
-echo_msg "ls -hAl /steam to show that steamcmd_linux.tar.gz has been extracted"
+echo_msg "ls -hAl /steam to show that steamcmd_linux.tar.gz has been downloaded and extracted"
 ls -hAl /steam
 
 echo_msg "/steam/steamcmd.sh +quit to install and update steamcmd"
 /steam/steamcmd.sh +quit
-# Exited with main.cpp (316) : Assertion Failed: Couldn't chdir into the install path
-# Might need to be run by sudo, or switch user context to the user that owns it
 
 # Install Valheim server
 echo_msg "/steam/steamcmd.sh +login anonymous +force_install_dir ./valheim +app_update 896660 +quit to install the Valheim server"
-/steam/steamcmd.sh +login anonymous +force_install_dir ./valheim +app_update 896660 +quit
+/steam/steamcmd.sh +login anonymous +force_install_dir /steam/valheim +app_update 896660 validate +quit
 
-# Start the Valheim server, in the background
-echo_msg "bash /steam/valheim/start_server.sh & to start the Valheim server in the background"
-cd /steam/valheim
-bash start_server.sh -name $valheim-server-display-name -port 2456 -nographics -batchmode -world $valheim-server-world-name -password $valheim-server-world-password -public $valheim-server-public &
+# Create check log script
+echo_msg "Creating check log script"
+cat > /steam/valheim/check_log.sh <<EOF
+journalctl --unit=valheimserver --reverse
+EOF
+echo_msg "cat /steam/valheim/check_log.sh to verify check log script"
+cat /steam/valheim/check_log.sh
 
-# # Exit the svc_valheim user context
-# echo_msg "exit to exit the service user context"
-# exit
+# Make the check log script executable
+echo_msg "sudo chmod +x /steam/valheim/check_log.sh to make the check log script executable"
+sudo chmod +x /steam/valheim/check_log.sh
+echo_msg "ls -Al /steam/valheim/ to verify the check log script is executable"
+ls -Al /steam/valheim/
 
-# Copy Valheim server world files?
+# Create startup script
+echo_msg "Creating custom server startup script"
+cat > /steam/valheim/start_server_custom.sh <<EOF
+#!/bin/bash
+export templdpath=\$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=./linux64:\$LD_LIBRARY_PATH
+export SteamAppId=892970
+./valheim_server.x86_64 -name "${valheim-server-display-name}" -port 2456 -nographics -batchmode -world "${valheim-server-world-name}" -password "${valheim-server-world-password}" -public ${valheim-server-public}
+export LD_LIBRARY_PATH=\$templdpath
+EOF
+echo_msg "cat /steam/valheim/start_server_custom.sh to verify server startup script"
+cat /steam/valheim/start_server_custom.sh
+
+# Make the startup script executable
+echo_msg "sudo chmod +x /steam/valheim/start_server_custom.sh to make the server startup script executable"
+sudo chmod +x /steam/valheim/start_server_custom.sh
+echo_msg "ls -Al /steam/valheim/ to verify the server startup script is executable"
+ls -Al /steam/valheim/
+
+# Install the startup script as a service
+cat > /etc/systemd/system/valheim.service <<EOF
+[Unit]
+Description=Valheim Server
+Wants=network-online.target
+After=syslog.target network.target nss-lookup.target network-online.target
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60s
+StartLimitBurst=3
+User=root
+Group=root
+ExecStartPre=/steam/steamcmd.sh +login anonymous +force_install_dir /steam/valheim +app_update 896660 validate +quit
+ExecStart=/steam/valheim/start_server_custom.sh
+ExecReload=/bin/kill -s HUP $MAINPID
+KillSignal=SIGINT
+WorkingDirectory=/steam/valheim
+LimitNOFILE=100000
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Reload daemons after creating service
+echo_msg "Reloading daemons after creating service"
+systemctl daemon-reload
+
+# Enable server to start on boot
+echo_msg "Enabling Valheim Server to start on boot"
+systemctl enable valheim
+
+# Start server
+echo_msg "Starting Valheim Server"
+systemctl start valheim
+
+# Check service status
+echo_msg "systemctl status valheim.service to show the service status"
+systemctl status valheim.service
+
+
+# Copy Valheim server world files from S3 bucket
 # s3 cp
 
 # Create a crontab to back up the Valheim server world files to S3
-
-# # Enable service to start after reboots
-# echo_msg "systemctl enable valheimserver to enable the service to run in the background"
-# systemctl enable valheimserver
-
-# # Check service status
-# echo_msg "systemctl status valheimserver.service to show the service status"
-# systemctl status valheimserver.service
 
 # Reboot to finish installing updates
 # echo_msg "sudo needs-restarting -r || sudo shutdown -r now to reboot if needed for patches"

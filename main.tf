@@ -88,14 +88,6 @@ resource "aws_security_group" "valheim-server-security-group" {
     }
 
     ingress {
-        description                 = "TCP 2456-2458 from the internet"
-        from_port                   = 2456
-        to_port                     = 2458
-        protocol                    = "tcp"
-        cidr_blocks                 = ["0.0.0.0/0"]
-    }
-
-    ingress {
         description                 = "SSH from the house"
         from_port                   = 22
         to_port                     = 22
