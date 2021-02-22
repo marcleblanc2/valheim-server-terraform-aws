@@ -33,30 +33,17 @@ ping -c 3 -W 3 google.com
 echo_msg "sudo yum install -y glibc.i686 libstdc++.i686 to install Steam pre-requisites"
 sudo yum install -y glibc.i686 libstdc++.i686
 
-# # Create Valheim server service account
-# # Not sure about assigning a password to a service user account on Amazon Linux 2
+
+# TODO
+# Create Valheim server service account
+# Change file paths / ownership / symlinks for service account
+# Change service definition to run as service account
+# Not sure about assigning a password to a service user account on Amazon Linux 2
 # echo_msg "sudo adduser -m svc_valheim to create a new service user"
 # sudo adduser -m svc_valheim # -p ${valheim-server-service-account-password}
 
-# echo_msg "cat /etc/passwd | grep svc_valheim to show the new service user was created"
-# cat /etc/passwd | grep svc_valheim
 
-# # Switch to the new user
-# echo_msg "sudo su - svc_valheim to switch user contexts to the service account"
-# sudo -u svc_valheim whoami
-
-# # Verify that we are the new user
-# echo_msg "whoami to verify we are the service account"
-# whoami
- 
-# # Move to the home directory to keep files clean
-# # echo_msg "sudo cd /home/svc_valheim to switch to the service account's home dir"
-# # sudo cd /home/svc_valheim
-
-# echo_msg "pwd and ls -hal to show that we're in /home/svc_valheim"
-# pwd
-# ls -hal
-
+# Create root directory to install Steam client and Valheim server
 sudo mkdir /steam
 
 # Install Steam
@@ -141,20 +128,23 @@ systemctl daemon-reload
 echo_msg "Enabling Valheim Server to start on boot"
 systemctl enable valheim
 
-# Start server
-echo_msg "Starting Valheim Server"
-systemctl start valheim
 
-# Check service status
-echo_msg "systemctl status valheim.service to show the service status"
-systemctl status valheim.service
-
-
+# TODO
 # Copy Valheim server world files from S3 bucket
 # s3 cp
 
+# TODO
 # Create a crontab to back up the Valheim server world files to S3
 
-# Reboot to finish installing updates
-# echo_msg "sudo needs-restarting -r || sudo shutdown -r now to reboot if needed for patches"
-# sudo needs-restarting -r || sudo shutdown -r now
+# Reboot to finish installing updates, and service will come online after reboot
+echo_msg "sudo needs-restarting -r || sudo shutdown -r now to reboot if needed for patches"
+sudo needs-restarting -r || sudo shutdown -r now
+
+
+# # Start server
+# echo_msg "Starting Valheim Server"
+# systemctl start valheim
+
+# # Check service status
+# echo_msg "systemctl status valheim.service to show the service status"
+# systemctl status valheim.service
