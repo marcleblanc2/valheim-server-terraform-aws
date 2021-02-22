@@ -138,6 +138,7 @@ data "template_file" "user-data-init" {
         valheim-server-display-name             = local.valheim-server-display-name
         valheim-server-world-name               = local.valheim-server-world-name
         valheim-server-world-password           = local.valheim-server-world-password
+        valheim-server-public                   = local.valheim-server-public
     }
 
 }
@@ -145,7 +146,7 @@ data "template_file" "user-data-init" {
 resource "aws_instance" "valheim-server-ec2-instance" {
 
     ami                             = data.aws_ami.amazon-linux-2.id
-    instance_type                   = "t2.micro"
+    instance_type                   = local.instance_type
     key_name                        = local.ssh-keypair-name
     subnet_id                       = aws_subnet.valheim-server-public-subnet.id
     user_data                       = data.template_file.user-data-init.rendered
