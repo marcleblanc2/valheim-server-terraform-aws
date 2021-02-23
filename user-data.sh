@@ -174,8 +174,13 @@ echo_msg "Enable service to start on boot - systemctl enable valheim"
 systemctl enable valheim
 
 
+# Show service status
+echo_msg "Show service status - systemctl status valheim"
+systemctl status valheim
+
+
 # TODO
-# Copy Valheim server world files from S3 bucket
+# Load Valheim server world files from S3 bucket
 # s3 cp
 
 # TODO
