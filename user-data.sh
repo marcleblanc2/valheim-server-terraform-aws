@@ -12,11 +12,25 @@ echo_msg () {
 }
 
 # Configure script to log console output to a log file
+# tail -f /var/log/valheim-server-terraform-bootstrap.log to monitor startup progress
 exec > >(tee -ia /var/log/valheim-server-terraform-bootstrap.log)
 exec 2>&1
 
 # Write start to log
 echo_msg "Starting `dirname "$0"`/`basename "$0"` from `pwd`"
+
+# Append command aliases to .bashrc
+echo_msg "Appending command aliases to .bashrc"
+echo_msg "cat /home/ec2-user/.bashrc to show the starting state"
+cat /home/ec2-user/.bashrc
+
+cat >> /home/ec2-user/.bashrc <<EOF
+alias c='clear'
+alias l='ls -hAl'
+EOF
+
+echo_msg "cat /home/ec2-user/.bashrc to verify the change"
+cat /home/ec2-user/.bashrc
 
 # Update packages
 echo_msg "sudo yum update -y to update packages in the Amazon Linux 2 image"
@@ -84,7 +98,7 @@ cat > /steam/valheim/start_server_custom.sh <<EOF
 export templdpath=\$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=./linux64:\$LD_LIBRARY_PATH
 export SteamAppId=892970
-./valheim_server.x86_64 -name "${valheim-server-display-name}" -port 2456 -nographics -batchmode -world "${valheim-server-world-name}" -password "${valheim-server-world-password}" -public ${valheim-server-public}
+./valheim_server.x86_64 -name "\"${valheim-server-display-name}"\" -port 2456 -nographics -batchmode -world "${valheim-server-world-name}" -password "${valheim-server-world-password}" -public ${valheim-server-public}
 export LD_LIBRARY_PATH=\$templdpath
 EOF
 echo_msg "cat /steam/valheim/start_server_custom.sh to verify server startup script"
