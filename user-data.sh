@@ -1,9 +1,11 @@
 #!/bin/bash
 
+# Define variables
 steamPath="/home/svc_valheim/Steam"
+valheimPath="$steamPath/valheim"
 
 
-### START BOOTSTRAP ###
+### START INSTANCE BOOTSTRAP ###
 
 # Define echo function to print log lines with date time stamp, and colour
 echo_msg () {
@@ -21,18 +23,24 @@ exec 2>&1
 # Write start to log
 echo_msg "Starting `dirname "$0"`/`basename "$0"` from `pwd`"
 
-# Append command aliases to .bashrc
-echo_msg "Append command aliases to .bashrc"
-echo_msg "cat /home/ec2-user/.bashrc to show the starting state"
+
+## Add my aliases to .bashrc
+
+# Show original .bashrc
+echo_msg "Show original .bashrc - cat /home/ec2-user/.bashrc"
 cat /home/ec2-user/.bashrc
 
+# Append command aliases to .bashrc
+echo_msg "Append command aliases to .bashrc - cat >> /home/ec2-user/.bashrc"
 cat >> /home/ec2-user/.bashrc <<EOF
 alias c='clear'
 alias l='ls -hAl'
 EOF
 
-echo_msg "cat /home/ec2-user/.bashrc to verify the change"
+# Verify the change to .bashrc
+echo_msg "Verify the change to .bashrc - cat /home/ec2-user/.bashrc"
 cat /home/ec2-user/.bashrc
+
 
 # Update packages
 echo_msg "Update packages - sudo yum update -y"
@@ -45,9 +53,7 @@ ping -c 3 -W 3 google.com
 
 ### START APP INSTALLATION AND CONFIGURATION ###
 
-# Install pre-requisites for Steam
-echo_msg "Install pre-requisites for Steam - sudo yum install -y glibc.i686 libstdc++.i686"
-sudo yum install -y glibc.i686 libstdc++.i686
+## Service account
 
 # Create Valheim service account
 # Need to run commands with sudo -u svc_valheim to run them as the service user
@@ -68,6 +74,13 @@ sudo -u svc_valheim mkdir $steamPath
 echo_msg "Show the Steam directory was made - sudo -u svc_valheim ls -al $steamPath"
 sudo -u svc_valheim ls -al $steamPath
 
+
+## Download and install packages
+
+# Install pre-requisite packages for Steam
+echo_msg "Install pre-requisite packages for Steam - sudo yum install -y glibc.i686 libstdc++.i686"
+sudo yum install -y glibc.i686 libstdc++.i686
+
 # Download steamcmd
 echo_msg "Download steamcmd - sudo -u svc_valheim wget -P $steamPath http://media.steampowered.com/installer/steamcmd_linux.tar.gz"
 sudo -u svc_valheim wget -P $steamPath http://media.steampowered.com/installer/steamcmd_linux.tar.gz
@@ -85,31 +98,15 @@ echo_msg "Install and update steamcmd - sudo -u svc_valheim $steamPath/steamcmd.
 sudo -u svc_valheim $steamPath/steamcmd.sh +quit
 
 # Install Valheim server
-echo_msg "Install Valheim server - sudo -u svc_valheim $steamPath/steamcmd.sh +login anonymous +force_install_dir $steamPath/valheim +app_update 896660 validate +quit"
-sudo -u svc_valheim $steamPath/steamcmd.sh +login anonymous +force_install_dir $steamPath/valheim +app_update 896660 validate +quit
+echo_msg "Install Valheim server - sudo -u svc_valheim $steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit"
+sudo -u svc_valheim $steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit
 
-# Create service log checking script
-echo_msg "Create service log checking script"
-sudo -u svc_valheim tee -a $steamPath/valheim/check_log.sh &>/dev/null <<EOF
-#!/bin/bash
-journalctl -a -o short-iso --no-pager --unit=valheim -f
-EOF
 
-# Show the service log checking script
-echo_msg "Show the service log checking script - sudo -u svc_valheim cat $steamPath/valheim/check_log.sh"
-sudo -u svc_valheim cat $steamPath/valheim/check_log.sh
-
-# Make the check log script executable
-echo_msg "Make the check log script executable - sudo chmod +x $steamPath/valheim/check_log.sh"
-sudo chmod +x $steamPath/valheim/check_log.sh
-
-# Show the service log checking script is executable
-echo_msg "Show the service log checking script is executable - sudo -u svc_valheim ls -Al $steamPath/valheim/"
-sudo -u svc_valheim ls -Al $steamPath/valheim/
+## Create custom Valheim server startup script
 
 # Create start_server_custom.sh
-echo_msg "Create start_server_custom.sh - sudo -u svc_valheim tee -a $steamPath/valheim/start_server_custom.sh"
-sudo -u svc_valheim tee -a $steamPath/valheim/start_server_custom.sh &>/dev/null <<EOF
+echo_msg "Create start_server_custom.sh - sudo -u svc_valheim tee -a $valheimPath/start_server_custom.sh"
+sudo -u svc_valheim tee -a $valheimPath/start_server_custom.sh &>/dev/null <<EOF
 #!/bin/bash
 export templdpath=\$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=./linux64:\$LD_LIBRARY_PATH
@@ -122,16 +119,19 @@ export LD_LIBRARY_PATH=\$templdpath
 EOF
 
 # Show start_server_custom.sh
-echo_msg "Show start_server_custom.sh - sudo -u svc_valheim cat $steamPath/valheim/start_server_custom.sh"
-sudo -u svc_valheim cat $steamPath/valheim/start_server_custom.sh
+echo_msg "Show start_server_custom.sh - sudo -u svc_valheim cat $valheimPath/start_server_custom.sh"
+sudo -u svc_valheim cat $valheimPath/start_server_custom.sh
 
 # Make start_server_custom.sh executable
-echo_msg "Make start_server_custom.sh executable - sudo chmod +x $steamPath/valheim/start_server_custom.sh"
-sudo chmod +x $steamPath/valheim/start_server_custom.sh
+echo_msg "Make start_server_custom.sh executable - sudo chmod +x $valheimPath/start_server_custom.sh"
+sudo chmod +x $valheimPath/start_server_custom.sh
 
 # Show start_server_custom.sh is executable
-echo_msg "Show tart_server_custom.sh is executable - sudo -u svc_valheim ls -Al $steamPath/valheim/"
-sudo -u svc_valheim ls -Al $steamPath/valheim/
+echo_msg "Show tart_server_custom.sh is executable - sudo -u svc_valheim ls -Al $valheimPath/"
+sudo -u svc_valheim ls -Al $valheimPath/
+
+
+## Create Valheim service
 
 # Create a service to run start_server_custom.sh
 echo_msg "Create a service to run start_server_custom.sh - cat > /etc/systemd/system/valheim.service"
@@ -149,11 +149,11 @@ StartLimitInterval=0s
 StartLimitBurst=10
 User=svc_valheim
 Group=svc_valheim
-ExecStartPre=-$steamPath/steamcmd.sh +login anonymous +force_install_dir $steamPath/valheim +app_update 896660 validate +quit
-ExecStart=$steamPath/valheim/start_server_custom.sh
+ExecStartPre=-$steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit
+ExecStart=$valheimPath/start_server_custom.sh
 ExecReload=/bin/kill -s HUP $MAINPID
 KillSignal=SIGINT
-WorkingDirectory=$steamPath/valheim
+WorkingDirectory=$valheimPath
 LimitNOFILE=100000
 
 [Install]
@@ -173,11 +173,34 @@ systemctl daemon-reload
 echo_msg "Enable service to start on boot - systemctl enable valheim"
 systemctl enable valheim
 
-
 # Show service status
 echo_msg "Show service status - systemctl status valheim"
 systemctl status valheim
 
+
+## Create script to check service logs, so I don't have to remember the command
+
+# Create service log checking script in ec2-user's home dir
+echo_msg "Create service log checking script in ec2-user's home dir - sudo -u ec2-user tee -a /home/ec2-user/check_valheim_service_log.sh"
+sudo -u ec2-user tee -a /home/ec2-user/check_valheim_service_log.sh &>/dev/null <<EOF
+#!/bin/bash
+journalctl -a -o short-iso --no-pager --unit=valheim -f
+EOF
+
+# Show the service log checking script
+echo_msg "Show the service log checking script - sudo -u ec2-user cat /home/ec2-user/check_valheim_service_log.sh"
+sudo -u ec2-user cat /home/ec2-user/check_valheim_service_log.sh
+
+# Make the service log checking script executable
+echo_msg "Make the service log checking script executable - sudo chmod +x /home/ec2-user/check_valheim_service_log.sh"
+sudo chmod +x /home/ec2-user/check_valheim_service_log.sh
+
+# Show the service log checking script is executable
+echo_msg "Show the service log checking script is executable - sudo -u ec2-user ls -Al /home/ec2-user/"
+sudo -u ec2-user ls -Al /home/ec2-user/
+
+
+## Game file storage
 
 # TODO
 # Load Valheim server world files from S3 bucket
@@ -185,6 +208,9 @@ systemctl status valheim
 
 # TODO
 # Create a crontab to back up the Valheim server world files to S3
+
+
+## Reboot
 
 # Reboot to finish installing updates, and service will come online after reboot
 echo_msg "Reboot to finish installing updates, and service will come online after reboot - sudo shutdown -r now"
