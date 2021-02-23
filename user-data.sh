@@ -63,12 +63,12 @@ echo_msg "/steam/steamcmd.sh +quit to install and update steamcmd"
 echo_msg "/steam/steamcmd.sh +login anonymous +force_install_dir ./valheim +app_update 896660 +quit to install the Valheim server"
 /steam/steamcmd.sh +login anonymous +force_install_dir /steam/valheim +app_update 896660 validate +quit
 
-# Create check log script
-echo_msg "Creating check log script"
+# Create service log checking script, so I don't have to remember the command every time
+echo_msg "Creating service log checking script"
 cat > /steam/valheim/check_log.sh <<EOF
-journalctl --unit=valheimserver --reverse
+journalctl --unit=valheim  -f
 EOF
-echo_msg "cat /steam/valheim/check_log.sh to verify check log script"
+echo_msg "cat /steam/valheim/check_log.sh to verify service log checking script"
 cat /steam/valheim/check_log.sh
 
 # Make the check log script executable
