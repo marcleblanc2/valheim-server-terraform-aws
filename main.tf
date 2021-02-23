@@ -133,7 +133,6 @@ data "template_file" "user-data-init" {
 
     template                        = file("user-data.sh")
     vars                            = {
-        valheim-server-service-account-password = local.valheim-server-service-account-password
         valheim-server-display-name             = local.valheim-server-display-name
         valheim-server-world-name               = local.valheim-server-world-name
         valheim-server-world-password           = local.valheim-server-world-password
