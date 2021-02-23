@@ -19,6 +19,14 @@ exec 2>&1
 # Write start to log
 echo_msg "Starting `dirname "$0"`/`basename "$0"` from `pwd`"
 
+# Echo whoami to the log, so we can see what user is running
+echo_msg "whoami to see what user is running"
+whoami
+
+# Echo sudo whoami to the log, so we can see what user is running
+echo_msg "sudo whoami to see what user is running"
+sudo whoami
+
 # Append command aliases to .bashrc
 echo_msg "Appending command aliases to .bashrc"
 echo_msg "cat /home/ec2-user/.bashrc to show the starting state"
@@ -49,13 +57,18 @@ sudo yum install -y glibc.i686 libstdc++.i686
 
 
 # TODO
-# Create Valheim server service account
 # Change file paths / ownership / symlinks for service account
-# Change service definition to run as service account
-# Not sure about assigning a password to a service user account on Amazon Linux 2
-# echo_msg "sudo adduser -m svc_valheim to create a new service user"
-# sudo adduser -m svc_valheim # -p ${valheim-server-service-account-password}
 
+# Create Valheim server service account
+# Need to run commands with sudo -u svc_valheim to run them as the service user
+echo_msg "sudo useradd --system --user-group --shell /sbin/nologin --create-home svc_valheim to create a new service user"
+sudo useradd --system --user-group --shell /sbin/nologin --create-home svc_valheim
+echo_msg "sudo usermod -L svc_valheim to disable the new service user from logging in"
+sudo usermod -L svc_valheim
+
+# sudo -u svc_valheim whoami to verify we can still use the user account to run commands
+echo_msg "sudo -u svc_valheim whoami to verify we can still use the user account to run commands"
+sudo -u svc_valheim whoami
 
 # Create root directory to install Steam client and Valheim server
 sudo mkdir /steam
@@ -98,7 +111,7 @@ cat > /steam/valheim/start_server_custom.sh <<EOF
 export templdpath=\$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=./linux64:\$LD_LIBRARY_PATH
 export SteamAppId=892970
-./valheim_server.x86_64 -name "\"${valheim-server-display-name}"\" -port 2456 -nographics -batchmode -world "${valheim-server-world-name}" -password "${valheim-server-world-password}" -public ${valheim-server-public}
+./valheim_server.x86_64 -name "\"${valheim-server-display-name}"\" -port 2456 -nographics -batchmode -world "\"${valheim-server-world-name}"\" -password "\"${valheim-server-world-password}"\" -public ${valheim-server-public}
 export LD_LIBRARY_PATH=\$templdpath
 EOF
 echo_msg "cat /steam/valheim/start_server_custom.sh to verify server startup script"
@@ -116,22 +129,25 @@ cat > /etc/systemd/system/valheim.service <<EOF
 Description=Valheim Server
 Wants=network-online.target
 After=syslog.target network.target nss-lookup.target network-online.target
+
 [Service]
 Type=simple
-Restart=on-failure
-RestartSec=5
-StartLimitInterval=60s
-StartLimitBurst=3
-User=root
-Group=root
-ExecStartPre=/steam/steamcmd.sh +login anonymous +force_install_dir /steam/valheim +app_update 896660 validate +quit
+Restart=always
+RestartSec=30
+StartLimitInterval=0s
+StartLimitBurst=10
+User=svc_valheim
+Group=svc_valheim
+ExecStartPre=-/steam/steamcmd.sh +login anonymous +force_install_dir /steam/valheim +app_update 896660 validate +quit
 ExecStart=/steam/valheim/start_server_custom.sh
 ExecReload=/bin/kill -s HUP $MAINPID
 KillSignal=SIGINT
 WorkingDirectory=/steam/valheim
 LimitNOFILE=100000
+
 [Install]
 WantedBy=multi-user.target
+
 EOF
 
 # Reload daemons after creating service
