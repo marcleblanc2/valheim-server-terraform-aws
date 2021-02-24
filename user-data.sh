@@ -112,7 +112,7 @@ export templdpath=\$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=./linux64:\$LD_LIBRARY_PATH
 export SteamAppId=892970
 
-./valheim_server.x86_64 -name "\"${valheim-server-display-name}"\" -port 2456 -nographics -batchmode -world "\"${valheim-server-world-name}"\" -password "\"${valheim-server-world-password}"\" -public ${valheim-server-public}
+./valheim_server.x86_64 -name ${valheim-server-display-name} -port 2456 -nographics -batchmode -world ${valheim-server-world-name} -password ${valheim-server-world-password} -public ${valheim-server-public}
 
 export LD_LIBRARY_PATH=\$templdpath
 
