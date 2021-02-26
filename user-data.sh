@@ -30,11 +30,12 @@ echo_msg "Starting `dirname "$0"`/`basename "$0"` from `pwd`"
 echo_msg "Show original .bashrc - cat /home/ec2-user/.bashrc"
 cat /home/ec2-user/.bashrc
 
-# Append command aliases to .bashrc
-echo_msg "Append command aliases to .bashrc - cat >> /home/ec2-user/.bashrc"
+# Append command aliases and bash history time format to .bashrc
+echo_msg "Append command aliases and bash history time format - cat >> /home/ec2-user/.bashrc"
 cat >> /home/ec2-user/.bashrc <<EOF
 alias c='clear'
 alias l='ls -hAl'
+export HISTTIMEFORMAT="%F %T %z %Z $ "
 EOF
 
 # Verify the change to .bashrc
