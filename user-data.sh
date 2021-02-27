@@ -7,9 +7,10 @@ valheimPath="$steamPath/valheim"
 
 ### START INSTANCE BOOTSTRAP ###
 
-# Override echo to print the echo message with a date time stamp and light green color
+# Override echo to print a new line then the echo message with a date time stamp and light green color
 function echo(){
 
+    builtin echo ""
     builtin echo -e "\e[92m $(date '+%F %T %z %Z') --- $1 \e[0m"
 
 }
@@ -22,6 +23,13 @@ exec 2>&1
 # Write start to log
 echo "Starting `dirname "$0"`/`basename "$0"` from `pwd`"
 
+# Log the AWS AMI ID
+echo "Log the AWS AMI ID - curl http://169.254.169.254/latest/meta-data/ami-id"
+curl http://169.254.169.254/latest/meta-data/ami-id
+
+# Log Linux kernel version
+echo "Log Linux kernel version - uname -r"
+uname -r
 
 ## Add my aliases to .bashrc
 
@@ -101,6 +109,10 @@ sudo -u svc_valheim $steamPath/steamcmd.sh +quit
 echo "Install Valheim server - sudo -u svc_valheim $steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit"
 sudo -u svc_valheim $steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit
 
+# Download game data files from S3 bucket
+echo "Download game data files from S3 bucket - sudo -u svc_valheim aws s3 cp s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ --recursive"
+sudo -u svc_valheim aws s3 cp s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ --recursive
+
 
 ## Create custom Valheim server startup script
 
@@ -149,8 +161,9 @@ StartLimitInterval=0s
 StartLimitBurst=10
 User=svc_valheim
 Group=svc_valheim
-ExecStartPre=-$steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit
+ExecStartPre=-$steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit ; aws s3 sync s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/
 ExecStart=$valheimPath/start_server_custom.sh
+ExecStop=aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/
 ExecReload=/bin/kill -s HUP $MAINPID
 KillSignal=SIGINT
 WorkingDirectory=$valheimPath
