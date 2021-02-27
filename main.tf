@@ -144,6 +144,7 @@ data "template_file" "user-data-init" {
 resource "aws_instance" "valheim-server-ec2-instance" {
 
     ami                             = data.aws_ami.amazon-linux-2.id
+    iam_instance_profile            = local.iam_instance_profile
     instance_type                   = local.instance_type
     key_name                        = local.ssh-keypair-name
     subnet_id                       = aws_subnet.valheim-server-public-subnet.id
