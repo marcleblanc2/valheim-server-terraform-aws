@@ -115,16 +115,16 @@ resource "aws_key_pair" "valheim-server-ssh-keypair" {
 data "aws_ami" "amazon-linux-2" {
 
     most_recent                     = true
-    owners                          = [ "amazon" ]
+    owners                          = ["amazon"]
     
     filter {
-        name                        = "owner-alias"
-        values                      = ["amazon"]
+        name                        = "name"
+        values                      = ["amzn2-ami-hvm-*-x86_64-gp2"]
     }
 
     filter {
-        name                        = "name"
-        values                      = ["amzn2-ami-hvm*"]
+        name                        = "description"
+        values                      = ["Amazon Linux 2 AMI * x86_64 HVM gp2"]
     }
 
 }
