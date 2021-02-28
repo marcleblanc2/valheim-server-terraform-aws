@@ -149,12 +149,12 @@ export LD_LIBRARY_PATH=./linux64:\$LD_LIBRARY_PATH
 export SteamAppId=892970
 
 # Sync game files from S3 bucket to instance before the game service starts
-# aws s3 sync s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/
+aws s3 sync s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/
 
 ./valheim_server.x86_64 -name ${valheim-server-display-name} -port 2456 -nographics -batchmode -world ${valheim-server-world-name} -password ${valheim-server-world-password} -public ${valheim-server-public}
 
 # Sync game files back to S3 bucket if the game service stops
-# aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/
+aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/
 
 export LD_LIBRARY_PATH=\$templdpath
 
@@ -194,6 +194,7 @@ Group=svc_valheim
 ExecStartPre=-$steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit
 ExecStart=$valheimPath/start_server_custom.sh
 ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/usr/bin/aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/
 KillSignal=SIGINT
 WorkingDirectory=$valheimPath
 LimitNOFILE=100000
