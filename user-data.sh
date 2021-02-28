@@ -23,6 +23,25 @@ exec 2>&1
 # Write start to log
 echo "Starting `dirname "$0"`/`basename "$0"` from `pwd`"
 
+# Change time zone
+echo "Change time zone - cat > /etc/sysconfig/clock"
+sudo cat > /etc/sysconfig/clock <<EOF
+ZONE="Canada/Mountain"
+UTC=true
+EOF
+
+# Show time zone
+echo "Show time zone - cat /etc/sysconfig/clock"
+cat /etc/sysconfig/clock
+
+# Create sym link for local time 
+echo "Create sym link for local time - sudo ln -sf /usr/share/zoneinfo/Canada/Mountain /etc/localtime"
+sudo ln -sf /usr/share/zoneinfo/Canada/Mountain /etc/localtime
+
+# Show sym link for local time 
+echo "Show sym link for local time - sudo ln -sf /usr/share/zoneinfo/Canada/Mountain /etc/localtime"
+ls -al --full-time /etc/localtime
+
 # Log the AWS AMI ID
 echo "Log the AWS AMI ID - curl http://169.254.169.254/latest/meta-data/ami-id"
 curl http://169.254.169.254/latest/meta-data/ami-id
@@ -41,7 +60,8 @@ cat /home/ec2-user/.bashrc
 echo "Append command aliases and bash history time format - cat >> /home/ec2-user/.bashrc"
 cat >> /home/ec2-user/.bashrc <<EOF
 alias c='clear'
-alias l='ls -hAl'
+alias l='ls -hAl --full-time'
+alias p='pwd'
 export HISTTIMEFORMAT="%F %T %z %Z $ "
 EOF
 
@@ -79,8 +99,8 @@ echo "Make the Steam directory - sudo -u svc_valheim mkdir $steamPath"
 sudo -u svc_valheim mkdir $steamPath
 
 # Show the Steam directory was made
-echo "Show the Steam directory was made - sudo -u svc_valheim ls -al $steamPath"
-sudo -u svc_valheim ls -al $steamPath
+echo "Show the Steam directory was made - sudo -u svc_valheim ls -al --full-time $steamPath"
+sudo -u svc_valheim ls -al --full-time $steamPath
 
 
 ## Download and install packages
@@ -98,8 +118,8 @@ echo "Untar steamcmd - sudo -u svc_valheim tar -xvzf $steamPath/steamcmd_linux.t
 sudo -u svc_valheim tar -xvzf $steamPath/steamcmd_linux.tar.gz -C $steamPath
 
 # Show the untarred files
-echo "Show the untarred files - sudo -u svc_valheim ls -hAl $steamPath"
-sudo -u svc_valheim ls -hAl $steamPath
+echo "Show the untarred files - sudo -u svc_valheim ls -hAl --full-time $steamPath"
+sudo -u svc_valheim ls -hAl --full-time $steamPath
 
 # Install and update steamcmd
 echo "Install and update steamcmd - sudo -u svc_valheim $steamPath/steamcmd.sh +quit"
@@ -113,6 +133,10 @@ sudo -u svc_valheim $steamPath/steamcmd.sh +login anonymous +force_install_dir $
 echo "Download game data files from S3 bucket - sudo -u svc_valheim aws s3 cp s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ --recursive"
 sudo -u svc_valheim aws s3 cp s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ --recursive
 
+# Show downloaded game data files from S3 bucket
+echo "Show downloaded game data files from S3 bucket - sudo -u svc_valheim ls -hal --full-time /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/"
+sudo -u svc_valheim ls -hal --full-time /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/
+
 
 ## Create custom Valheim server startup script
 
@@ -124,7 +148,13 @@ export templdpath=\$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=./linux64:\$LD_LIBRARY_PATH
 export SteamAppId=892970
 
+# Sync game files from S3 bucket to instance before the game service starts
+# aws s3 sync s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/
+
 ./valheim_server.x86_64 -name ${valheim-server-display-name} -port 2456 -nographics -batchmode -world ${valheim-server-world-name} -password ${valheim-server-world-password} -public ${valheim-server-public}
+
+# Sync game files back to S3 bucket if the game service stops
+# aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/
 
 export LD_LIBRARY_PATH=\$templdpath
 
@@ -139,8 +169,8 @@ echo "Make start_server_custom.sh executable - sudo chmod +x $valheimPath/start_
 sudo chmod +x $valheimPath/start_server_custom.sh
 
 # Show start_server_custom.sh is executable
-echo "Show tart_server_custom.sh is executable - sudo -u svc_valheim ls -Al $valheimPath/"
-sudo -u svc_valheim ls -Al $valheimPath/
+echo "Show start_server_custom.sh is executable - sudo -u svc_valheim ls -Al --full-time $valheimPath/"
+sudo -u svc_valheim ls -Al --full-time $valheimPath/
 
 
 ## Create Valheim service
@@ -161,9 +191,8 @@ StartLimitInterval=0s
 StartLimitBurst=10
 User=svc_valheim
 Group=svc_valheim
-ExecStartPre=-$steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit ; aws s3 sync s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/
+ExecStartPre=-$steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit
 ExecStart=$valheimPath/start_server_custom.sh
-ExecStop=aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/
 ExecReload=/bin/kill -s HUP $MAINPID
 KillSignal=SIGINT
 WorkingDirectory=$valheimPath
@@ -209,19 +238,14 @@ echo "Make the service log checking script executable - sudo chmod +x /home/ec2-
 sudo chmod +x /home/ec2-user/check_valheim_service_log.sh
 
 # Show the service log checking script is executable
-echo "Show the service log checking script is executable - sudo -u ec2-user ls -Al /home/ec2-user/"
-sudo -u ec2-user ls -Al /home/ec2-user/
+echo "Show the service log checking script is executable - sudo -u ec2-user ls -Al --full-time /home/ec2-user/"
+sudo -u ec2-user ls -Al --full-time /home/ec2-user/
 
 
 ## Game file storage
 
 # TODO
-# Load Valheim server world files from S3 bucket
-# s3 cp
-
-# TODO
-# Create a crontab to back up the Valheim server world files to S3
-
+# Create a cronjob to back up the Valheim server world files to S3
 
 ## Reboot
 
