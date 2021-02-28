@@ -39,12 +39,17 @@ echo "Create sym link for local time - sudo ln -sf /usr/share/zoneinfo/Canada/Mo
 sudo ln -sf /usr/share/zoneinfo/Canada/Mountain /etc/localtime
 
 # Show sym link for local time 
-echo "Show sym link for local time - sudo ln -sf /usr/share/zoneinfo/Canada/Mountain /etc/localtime"
+echo "Show sym link for local time - ls -al --full-time /etc/localtime"
 ls -al --full-time /etc/localtime
 
 # Log the AWS AMI ID
-echo "Log the AWS AMI ID - curl http://169.254.169.254/latest/meta-data/ami-id"
-curl http://169.254.169.254/latest/meta-data/ami-id
+echo "Log the AWS AMI ID - curl -s http://169.254.169.254/latest/meta-data/ami-id"
+AMI=$(curl -s http://169.254.169.254/latest/meta-data/ami-id)
+builtin echo $AMI
+
+# Log the AWS AMI Creation date
+echo "Log the AWS AMI Creation date - aws ec2 describe-images --image-ids $AMI --query 'Images[*].[CreationDate]' --region ${region} --output text"
+aws ec2 describe-images --image-ids $AMI --query 'Images[*].[CreationDate]' --region ${region} --output text
 
 # Log Linux kernel version
 echo "Log Linux kernel version - uname -r"
@@ -151,7 +156,7 @@ export SteamAppId=892970
 # Sync game files from S3 bucket to instance before the game service starts
 aws s3 sync s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/
 
-./valheim_server.x86_64 -name ${valheim-server-display-name} -port 2456 -nographics -batchmode -world ${valheim-server-world-name} -password ${valheim-server-world-password} -public ${valheim-server-public}
+./valheim_server.x86_64 -name ${valheim-server-display-name} -password ${valheim-server-world-password} -public ${valheim-server-public} -world ${valheim-server-world-name} -port 2456 -nographics -batchmode
 
 # Sync game files back to S3 bucket if the game service stops
 aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/

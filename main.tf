@@ -133,6 +133,7 @@ data "template_file" "user-data-init" {
 
     template                        = file("user-data.sh")
     vars                            = {
+        region                                  = local.region
         valheim-server-display-name             = local.valheim-server-display-name
         valheim-server-world-name               = local.valheim-server-world-name
         valheim-server-world-password           = local.valheim-server-world-password
