@@ -248,10 +248,32 @@ echo "Show the service log checking script is executable - sudo -u ec2-user ls -
 sudo -u ec2-user ls -Al --full-time /home/ec2-user/
 
 
-## Game file storage
+## Sync game files to S3 every 5 minutes
 
-# TODO
-# Create a cronjob to back up the Valheim server world files to S3
+# Log starting crontab config
+echo "Log starting crontab config - sudo -u svc_valheim crontab -l"
+sudo -u svc_valheim crontab -l
+
+# Write out current crontab to crontemp
+echo "Write out current crontab to crontemp - sudo -u svc_valheim crontab -l > crontemp"
+sudo -u svc_valheim crontab -l > crontemp
+
+# Append new cronjob to crontemp
+echo "Append new cronjob to crontemp"
+sudo -u svc_valheim cat "*/5 * * * * /usr/bin/aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/" >> crontemp
+
+# Install crontemp
+echo "Install crontemp"
+sudo -u svc_valheim crontab crontemp
+
+# Clean up crontemp
+echo "Clean up crontemp"
+sudo -u svc_valheim rm crontemp
+
+# Verify crontab config
+echo "Verify crontab config - sudo -u svc_valheim crontab -l"
+sudo -u svc_valheim crontab -l
+
 
 ## Reboot
 
