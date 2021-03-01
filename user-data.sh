@@ -255,20 +255,18 @@ echo "Log starting crontab config - sudo -u svc_valheim crontab -l"
 sudo -u svc_valheim crontab -l
 
 # Write out current crontab to crontemp
-echo "Write out current crontab to crontemp - sudo -u svc_valheim crontab -l > crontemp"
-sudo -u svc_valheim crontab -l > crontemp
+echo "Write out current crontab to crontemp - sudo -u svc_valheim crontab -l > $valheimPath/AWSS3SyncCronTemp"
+sudo -u svc_valheim crontab -l | sudo -u svc_valheim tee -a $valheimPath/AWSS3SyncCronTemp
 
 # Append new cronjob to crontemp
-echo "Append new cronjob to crontemp"
-sudo -u svc_valheim cat "*/5 * * * * /usr/bin/aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/" >> crontemp
+echo "Append new cronjob to crontemp - sudo -u svc_valheim tee -a $valheimPath/AWSS3SyncCronTemp"
+sudo -u svc_valheim tee -a $valheimPath/AWSS3SyncCronTemp &>/dev/null <<EOF
+*/5 * * * * /usr/bin/aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/
+EOF
 
 # Install crontemp
-echo "Install crontemp"
-sudo -u svc_valheim crontab crontemp
-
-# Clean up crontemp
-echo "Clean up crontemp"
-sudo -u svc_valheim rm crontemp
+echo "Install crontemp - sudo -u svc_valheim crontab $valheimPath/AWSS3SyncCronTemp"
+sudo -u svc_valheim crontab $valheimPath/AWSS3SyncCronTemp
 
 # Verify crontab config
 echo "Verify crontab config - sudo -u svc_valheim crontab -l"
