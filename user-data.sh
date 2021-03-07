@@ -278,7 +278,15 @@ systemctl status valheim
 echo "Create service log checking script in ec2-user's home dir - sudo -u ec2-user tee -a /home/ec2-user/check_valheim_service_log.sh"
 sudo -u ec2-user tee -a /home/ec2-user/check_valheim_service_log.sh &>/dev/null <<EOF
 #!/bin/bash
-journalctl -a -o short-iso --no-pager --unit=valheim -f
+
+sudo journalctl --all --output=short-iso --unit=valheim --since="-2h" --follow \
+  | grep --line-buffered --invert-match "Filename: ./Runtime/Export" \
+  | awk '{ $2=""; print }' \
+  | sed -u 's/\([0-9]\{4\}-[0-9][0-9]-[0-9][0-9]\)T\([0-9][0-9]:[0-9][0-9]:[0-9][0-9]\)/\1   \2/' \
+  | sed -u 's/-\([0-9]\{4\}\)/ /' \
+  | sed -u 's/: /   /' \
+  | sed -uE 's~([0-9]{1,2}/){2}[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}: *~~'
+
 EOF
 
 # Show the service log checking script
