@@ -281,7 +281,7 @@ sudo -u ec2-user tee -a /home/ec2-user/check_valheim_service_log.sh &>/dev/null 
 
 sudo journalctl --all --output=short-iso --unit=valheim --since="-2h" --follow \
   | grep --line-buffered --invert-match "Filename: ./Runtime/Export" \
-  | awk '{ $2=""; print }' \
+  | gawk '{ $2=""; print; system("") }' \
   | sed -u 's/\([0-9]\{4\}-[0-9][0-9]-[0-9][0-9]\)T\([0-9][0-9]:[0-9][0-9]:[0-9][0-9]\)/\1   \2/' \
   | sed -u 's/-\([0-9]\{4\}\)/ /' \
   | sed -u 's/: /   /' \
