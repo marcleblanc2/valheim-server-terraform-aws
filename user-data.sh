@@ -16,12 +16,15 @@ function echo(){
 }
 
 # Configure script to log console output to a log file
-# tail -f /var/log/valheim-server-terraform-bootstrap.log to monitor startup progress
-exec > >(tee -ia /var/log/valheim-server-terraform-bootstrap.log)
+# tail -f /var/log/terraform-bootstrap.log to monitor startup progress
+exec > >(tee -ia /var/log/terraform-bootstrap.log)
 exec 2>&1
 
 # Write start to log
 echo "Starting `dirname "$0"`/`basename "$0"` from `pwd`"
+
+
+## Change time zone
 
 # Change time zone
 echo "Change time zone - cat > /etc/sysconfig/clock"
@@ -42,6 +45,9 @@ sudo ln -sf /usr/share/zoneinfo/Canada/Mountain /etc/localtime
 echo "Show sym link for local time - ls -al --full-time /etc/localtime"
 ls -al --full-time /etc/localtime
 
+
+## Log OS information
+
 # Log the AWS AMI ID
 echo "Log the AWS AMI ID - curl -s http://169.254.169.254/latest/meta-data/ami-id"
 AMI=$(curl -s http://169.254.169.254/latest/meta-data/ami-id)
@@ -55,7 +61,46 @@ aws ec2 describe-images --image-ids $AMI --query 'Images[*].[CreationDate]' --re
 echo "Log Linux kernel version - uname -r"
 uname -r
 
-## Add my aliases to .bashrc
+
+## Change SAR to run every minute
+
+# Show starting sysstat
+echo "Show starting sysstat - sudo cat /etc/cron.d/sysstat"
+sudo cat /etc/cron.d/sysstat
+
+# Write new sysstat file
+echo "Write new sysstat file - sudo cat > /etc/cron.d/sysstat"
+sudo cat > /etc/cron.d/sysstat <<EOF
+# Run system activity accounting tool every minute
+* * * * * root /usr/lib64/sa/sa1 1 1
+# Generate a daily summary of process accounting at 23:53
+53 23 * * * root /usr/lib64/sa/sa2 -A
+EOF
+
+# Show modified sysstat
+echo "Show modified sysstat - sudo cat /etc/cron.d/sysstat"
+sudo cat /etc/cron.d/sysstat
+
+
+## Set vm.overcommit limits to stop Valheim service from shitting itself
+
+# Log starting sysctl.conf
+echo "Log starting sysctl.conf - sudo cat /etc/sysctl.conf"
+sudo cat /etc/sysctl.conf
+
+# Append vm.overcommit configs to sysctl.conf
+echo "Append vm.overcommit configs to sysctl.conf - sudo tee -ia /etc/sysctl.conf &>/dev/null"
+sudo tee -ia /etc/sysctl.conf &>/dev/null <<EOF
+vm.overcommit_ratio=100
+vm.overcommit_memory=2
+EOF
+
+# Verify sysctl.conf
+echo "Verify sysctl.conf - sudo cat /etc/sysctl.conf"
+sudo cat /etc/sysctl.conf
+
+
+## Add my customizations to .bashrc
 
 # Show original .bashrc
 echo "Show original .bashrc - cat /home/ec2-user/.bashrc"
@@ -68,6 +113,7 @@ alias c='clear'
 alias l='ls -hAl --full-time'
 alias p='pwd'
 export HISTTIMEFORMAT="%F %T %z %Z $ "
+export PS1="\[\e[36;1m\][\D{%F %T}] [\w]\[\e[0m\] $ "
 EOF
 
 # Verify the change to .bashrc
@@ -246,6 +292,41 @@ sudo chmod +x /home/ec2-user/check_valheim_service_log.sh
 # Show the service log checking script is executable
 echo "Show the service log checking script is executable - sudo -u ec2-user ls -Al --full-time /home/ec2-user/"
 sudo -u ec2-user ls -Al --full-time /home/ec2-user/
+
+
+# ## Enable persistent log storage for journalctl
+# May not be needed, as Amazon Linux 2 has /var/log/journal/ in place
+# https://www.digitalocean.com/community/tutorials/how-to-use-journalctl-to-view-and-manipulate-systemd-logs
+
+# # Log starting journalctl config
+# echo "Log starting journalctl config - sudo cat /etc/systemd/journald.conf"
+# sudo cat /etc/systemd/journald.conf
+
+# # Append Storage=persistent to journalctl config
+# echo "Append Storage=persistent to journalctl config - sudo tee -ia /etc/systemd/journald.conf &>/dev/null"
+# sudo tee -ia /etc/systemd/journald.conf &>/dev/null <<EOF
+# Storage=persistent
+# EOF
+
+# # Verify journalctl config
+# echo "Verify journalctl config - sudo cat /etc/systemd/journald.conf"
+# sudo cat /etc/systemd/journald.conf
+
+
+## Keep journalctl logs down to max 1 GB
+# Log starting journalctl config
+echo "Log starting journalctl config - sudo cat /etc/systemd/journald.conf"
+sudo cat /etc/systemd/journald.conf
+
+# Append SystemMaxUse=1G to journalctl config
+echo "Append SystemMaxUse=1G to journalctl config - sudo tee -ia /etc/systemd/journald.conf &>/dev/null"
+sudo tee -ia /etc/systemd/journald.conf &>/dev/null <<EOF
+SystemMaxUse=1G
+EOF
+
+# Verify journalctl config
+echo "Verify journalctl config - sudo cat /etc/systemd/journald.conf"
+sudo cat /etc/systemd/journald.conf
 
 
 ## Sync game files to S3 every 5 minutes
