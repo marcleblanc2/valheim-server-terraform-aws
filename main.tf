@@ -30,6 +30,7 @@ resource "aws_vpc" "valheim-server-vpc" {
     cidr_block                      = "10.0.0.0/16"
     enable_dns_hostnames            = true
     enable_dns_support              = true
+    tags                            = local.tags
 
 }
 
@@ -38,18 +39,21 @@ resource "aws_subnet" "valheim-server-public-subnet" {
     availability_zone               = local.availability_zone
     cidr_block                      = "10.0.0.0/24"
     map_public_ip_on_launch         = true
+    tags                            = local.tags
     vpc_id                          = aws_vpc.valheim-server-vpc.id
 
 }
 
 resource "aws_internet_gateway" "valheim-server-internet-gateway" {
     
+    tags                            = local.tags
     vpc_id                          = aws_vpc.valheim-server-vpc.id
 
 }
 
 resource "aws_route_table" "valheim-server-internet-gateway-route-table" {
 
+    tags                            = local.tags
     vpc_id                          = aws_vpc.valheim-server-vpc.id
 
     route {
@@ -60,15 +64,16 @@ resource "aws_route_table" "valheim-server-internet-gateway-route-table" {
 
 resource "aws_route_table_association" "valheim-server-internet-gateway-route-table-association" {
 
-    subnet_id                       = aws_subnet.valheim-server-public-subnet.id
     route_table_id                  = aws_route_table.valheim-server-internet-gateway-route-table.id
+    subnet_id                       = aws_subnet.valheim-server-public-subnet.id
 
 }
 
 resource "aws_security_group" "valheim-server-security-group" {
     
-    name                            = "valheim-server-security-group"
     description                     = "Allow inbound Valheim traffic from the internet"
+    name                            = "valheim-server-security-group"
+    tags                            = local.tags
     vpc_id                          = aws_vpc.valheim-server-vpc.id
 
     egress {
@@ -109,6 +114,7 @@ resource "aws_key_pair" "valheim-server-ssh-keypair" {
   
     key_name                        = local.ssh-keypair-name
     public_key                      = local.ssh-keypair-public-key
+    tags                            = local.tags
 
 }
 
@@ -133,6 +139,7 @@ data "template_file" "user-data-init" {
 
     template                        = file("user-data.sh")
     vars                            = {
+        environment                             = terraform.workspace
         region                                  = local.region
         valheim-server-display-name             = local.valheim-server-display-name
         valheim-server-world-name               = local.valheim-server-world-name
@@ -149,6 +156,7 @@ resource "aws_instance" "valheim-server-ec2-instance" {
     instance_type                   = local.instance_type
     key_name                        = local.ssh-keypair-name
     subnet_id                       = aws_subnet.valheim-server-public-subnet.id
+    tags                            = local.tags
     user_data                       = data.template_file.user-data-init.rendered
     vpc_security_group_ids          = [aws_security_group.valheim-server-security-group.id]
 
@@ -156,12 +164,10 @@ resource "aws_instance" "valheim-server-ec2-instance" {
 
 resource "aws_route53_record" "valheim-server-route53-record" {
 
-    zone_id                         = local.route53-zone-id
     name                            = local.route53-hostname
+    records                         = [aws_instance.valheim-server-ec2-instance.public_dns] 
     type                            = "CNAME"
     ttl                             = "60"
-    records                         = [aws_instance.valheim-server-ec2-instance.public_dns] 
+    zone_id                         = local.route53-zone-id
 
 }
-
-# Storage?

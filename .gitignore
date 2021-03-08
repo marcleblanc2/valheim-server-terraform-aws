@@ -21,3 +21,4 @@ Icon
 private-local-variables.tf
 notes
 .terraform*
+versions.tf

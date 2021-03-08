@@ -1,9 +1,13 @@
 output "ec2-instance-ami-creation-date" {
+
     value = data.aws_ami.amazon-linux-2.creation_date
+
 }
 
 output "ec2-instance-ami-description" {
+
     value = data.aws_ami.amazon-linux-2.description
+
 }
 
 output "ec2-instance-public-ip" {
