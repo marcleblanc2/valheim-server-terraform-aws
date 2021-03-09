@@ -93,19 +93,19 @@ resource "aws_security_group" "valheim-server-security-group" {
     }
 
     ingress {
-        description                 = "SSH from the house"
+        description                 = "SSH inbound"
         from_port                   = 22
         to_port                     = 22
         protocol                    = "tcp"
-        cidr_blocks                 = local.home-ip-address-list
+        cidr_blocks                 = local.management-ip-address-list
     }
 
     ingress {
-        description                 = "Ping from the house"
+        description                 = "Ping inbound"
         from_port                   = 8
         to_port                     = -1
         protocol                    = "icmp"
-        cidr_blocks                 = local.home-ip-address-list
+        cidr_blocks                 = local.management-ip-address-list
     }
 
 }
@@ -140,11 +140,13 @@ data "template_file" "user-data-init" {
     template                        = file("user-data.sh")
     vars                            = {
         environment                             = terraform.workspace
+        game-data-bucket-name                   = local.game-data-bucket-name
         region                                  = local.region
         valheim-server-display-name             = local.valheim-server-display-name
         valheim-server-world-name               = local.valheim-server-world-name
         valheim-server-world-password           = local.valheim-server-world-password
         valheim-server-public                   = local.valheim-server-public
+        svc_account                             = local.svc_account
     }
 
 }

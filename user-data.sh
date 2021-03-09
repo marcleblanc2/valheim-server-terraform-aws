@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define variables
-steamPath="/home/svc_valheim/Steam"
+steamPath="/home/${svc_account}/Steam"
 valheimPath="$steamPath/valheim"
 
 
@@ -135,23 +135,23 @@ ping -c 3 -W 3 google.com
 ## Service account
 
 # Create Valheim service account
-# Need to run commands with sudo -u svc_valheim to run them as the service user
-echo "Create Valheim service account - sudo useradd --system --user-group --shell /sbin/nologin --create-home svc_valheim"
-sudo useradd --system --user-group --shell /sbin/nologin --create-home svc_valheim
-echo "Disable the service account from being able to log in - sudo usermod -L svc_valheim"
-sudo usermod -L svc_valheim
+# Need to run commands with sudo -u ${svc_account} to run them as the service user
+echo "Create Valheim service account - sudo useradd --system --user-group --shell /sbin/nologin --create-home ${svc_account}"
+sudo useradd --system --user-group --shell /sbin/nologin --create-home ${svc_account}
+echo "Disable the service account from being able to log in - sudo usermod -L ${svc_account}"
+sudo usermod -L ${svc_account}
 
 # Verify the service account is usable
-echo "Verify the service account is usable - sudo -u svc_valheim whoami"
-sudo -u svc_valheim whoami
+echo "Verify the service account is usable - sudo -u ${svc_account} whoami"
+sudo -u ${svc_account} whoami
 
 # Make the Steam directory
-echo "Make the Steam directory - sudo -u svc_valheim mkdir $steamPath"
-sudo -u svc_valheim mkdir $steamPath
+echo "Make the Steam directory - sudo -u ${svc_account} mkdir $steamPath"
+sudo -u ${svc_account} mkdir $steamPath
 
 # Show the Steam directory was made
-echo "Show the Steam directory was made - sudo -u svc_valheim ls -al --full-time $steamPath"
-sudo -u svc_valheim ls -al --full-time $steamPath
+echo "Show the Steam directory was made - sudo -u ${svc_account} ls -al --full-time $steamPath"
+sudo -u ${svc_account} ls -al --full-time $steamPath
 
 
 ## Download and install packages
@@ -161,67 +161,67 @@ echo "Install pre-requisite packages for Steam - sudo yum install -y glibc.i686 
 sudo yum install -y glibc.i686 libstdc++.i686
 
 # Download steamcmd
-echo "Download steamcmd - sudo -u svc_valheim wget -P $steamPath http://media.steampowered.com/installer/steamcmd_linux.tar.gz"
-sudo -u svc_valheim wget -P $steamPath http://media.steampowered.com/installer/steamcmd_linux.tar.gz
+echo "Download steamcmd - sudo -u ${svc_account} wget -P $steamPath http://media.steampowered.com/installer/steamcmd_linux.tar.gz"
+sudo -u ${svc_account} wget -P $steamPath http://media.steampowered.com/installer/steamcmd_linux.tar.gz
 
 # Untar steamcmd
-echo "Untar steamcmd - sudo -u svc_valheim tar -xvzf $steamPath/steamcmd_linux.tar.gz -C $steamPath"
-sudo -u svc_valheim tar -xvzf $steamPath/steamcmd_linux.tar.gz -C $steamPath
+echo "Untar steamcmd - sudo -u ${svc_account} tar -xvzf $steamPath/steamcmd_linux.tar.gz -C $steamPath"
+sudo -u ${svc_account} tar -xvzf $steamPath/steamcmd_linux.tar.gz -C $steamPath
 
 # Show the untarred files
-echo "Show the untarred files - sudo -u svc_valheim ls -hAl --full-time $steamPath"
-sudo -u svc_valheim ls -hAl --full-time $steamPath
+echo "Show the untarred files - sudo -u ${svc_account} ls -hAl --full-time $steamPath"
+sudo -u ${svc_account} ls -hAl --full-time $steamPath
 
 # Install and update steamcmd
-echo "Install and update steamcmd - sudo -u svc_valheim $steamPath/steamcmd.sh +quit"
-sudo -u svc_valheim $steamPath/steamcmd.sh +quit
+echo "Install and update steamcmd - sudo -u ${svc_account} $steamPath/steamcmd.sh +quit"
+sudo -u ${svc_account} $steamPath/steamcmd.sh +quit
 
 # Install Valheim server
-echo "Install Valheim server - sudo -u svc_valheim $steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit"
-sudo -u svc_valheim $steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit
+echo "Install Valheim server - sudo -u ${svc_account} $steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit"
+sudo -u ${svc_account} $steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit
 
 # Download game data files from S3 bucket
-echo "Download game data files from S3 bucket - sudo -u svc_valheim aws s3 cp s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ --recursive"
-sudo -u svc_valheim aws s3 cp s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ --recursive
+echo "Download game data files from S3 bucket - sudo -u ${svc_account} aws s3 cp s3://${game-data-bucket-name}/ /home/${svc_account}/.config/unity3d/IronGate/Valheim/worlds/ --recursive"
+sudo -u ${svc_account} aws s3 cp s3://${game-data-bucket-name}/ /home/${svc_account}/.config/unity3d/IronGate/Valheim/worlds/ --recursive
 
 # Show downloaded game data files from S3 bucket
-echo "Show downloaded game data files from S3 bucket - sudo -u svc_valheim ls -hal --full-time /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/"
-sudo -u svc_valheim ls -hal --full-time /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/
+echo "Show downloaded game data files from S3 bucket - sudo -u ${svc_account} ls -hal --full-time /home/${svc_account}/.config/unity3d/IronGate/Valheim/worlds/"
+sudo -u ${svc_account} ls -hal --full-time /home/${svc_account}/.config/unity3d/IronGate/Valheim/worlds/
 
 
 ## Create custom Valheim server startup script
 
 # Create start_server_custom.sh
-echo "Create start_server_custom.sh - sudo -u svc_valheim tee -a $valheimPath/start_server_custom.sh"
-sudo -u svc_valheim tee -a $valheimPath/start_server_custom.sh &>/dev/null <<EOF
+echo "Create start_server_custom.sh - sudo -u ${svc_account} tee -a $valheimPath/start_server_custom.sh"
+sudo -u ${svc_account} tee -a $valheimPath/start_server_custom.sh &>/dev/null <<EOF
 #!/bin/bash
 export templdpath=\$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=./linux64:\$LD_LIBRARY_PATH
 export SteamAppId=892970
 
 # Sync game files from S3 bucket to instance before the game service starts
-aws s3 sync s3://valheim-game-data/ /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/
+aws s3 sync s3://${game-data-bucket-name}/ /home/${svc_account}/.config/unity3d/IronGate/Valheim/worlds/
 
 ./valheim_server.x86_64 -name ${valheim-server-display-name} -password ${valheim-server-world-password} -public ${valheim-server-public} -world ${valheim-server-world-name} -port 2456 -nographics -batchmode
 
 # Sync game files back to S3 bucket if the game service stops
-aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/
+aws s3 sync /home/${svc_account}/.config/unity3d/IronGate/Valheim/worlds/ s3://${game-data-bucket-name}/
 
 export LD_LIBRARY_PATH=\$templdpath
 
 EOF
 
 # Show start_server_custom.sh
-echo "Show start_server_custom.sh - sudo -u svc_valheim cat $valheimPath/start_server_custom.sh"
-sudo -u svc_valheim cat $valheimPath/start_server_custom.sh
+echo "Show start_server_custom.sh - sudo -u ${svc_account} cat $valheimPath/start_server_custom.sh"
+sudo -u ${svc_account} cat $valheimPath/start_server_custom.sh
 
 # Make start_server_custom.sh executable
 echo "Make start_server_custom.sh executable - sudo chmod +x $valheimPath/start_server_custom.sh"
 sudo chmod +x $valheimPath/start_server_custom.sh
 
 # Show start_server_custom.sh is executable
-echo "Show start_server_custom.sh is executable - sudo -u svc_valheim ls -Al --full-time $valheimPath/"
-sudo -u svc_valheim ls -Al --full-time $valheimPath/
+echo "Show start_server_custom.sh is executable - sudo -u ${svc_account} ls -Al --full-time $valheimPath/"
+sudo -u ${svc_account} ls -Al --full-time $valheimPath/
 
 
 ## Create Valheim service
@@ -240,12 +240,12 @@ Restart=always
 RestartSec=30
 StartLimitInterval=0s
 StartLimitBurst=10
-User=svc_valheim
-Group=svc_valheim
+User=${svc_account}
+Group=${svc_account}
 ExecStartPre=-$steamPath/steamcmd.sh +login anonymous +force_install_dir $valheimPath +app_update 896660 validate +quit
 ExecStart=$valheimPath/start_server_custom.sh
 ExecReload=/bin/kill -s HUP $MAINPID
-ExecStop=/usr/bin/aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/
+ExecStop=/usr/bin/aws s3 sync /home/${svc_account}/.config/unity3d/IronGate/Valheim/worlds/ s3://${game-data-bucket-name}/
 KillSignal=SIGINT
 WorkingDirectory=$valheimPath
 LimitNOFILE=100000
@@ -340,26 +340,26 @@ sudo cat /etc/systemd/journald.conf
 ## Sync game files to S3 every 5 minutes
 
 # Log starting crontab config
-echo "Log starting crontab config - sudo -u svc_valheim crontab -l"
-sudo -u svc_valheim crontab -l
+echo "Log starting crontab config - sudo -u ${svc_account} crontab -l"
+sudo -u ${svc_account} crontab -l
 
 # Write out current crontab to crontemp
-echo "Write out current crontab to crontemp - sudo -u svc_valheim crontab -l > $valheimPath/AWSS3SyncCronTemp"
-sudo -u svc_valheim crontab -l | sudo -u svc_valheim tee -a $valheimPath/AWSS3SyncCronTemp
+echo "Write out current crontab to crontemp - sudo -u ${svc_account} crontab -l > $valheimPath/AWSS3SyncCronTemp"
+sudo -u ${svc_account} crontab -l | sudo -u ${svc_account} tee -a $valheimPath/AWSS3SyncCronTemp
 
 # Append new cronjob to crontemp
-echo "Append new cronjob to crontemp - sudo -u svc_valheim tee -a $valheimPath/AWSS3SyncCronTemp"
-sudo -u svc_valheim tee -a $valheimPath/AWSS3SyncCronTemp &>/dev/null <<EOF
-*/5 * * * * /usr/bin/aws s3 sync /home/svc_valheim/.config/unity3d/IronGate/Valheim/worlds/ s3://valheim-game-data/
+echo "Append new cronjob to crontemp - sudo -u ${svc_account} tee -a $valheimPath/AWSS3SyncCronTemp"
+sudo -u ${svc_account} tee -a $valheimPath/AWSS3SyncCronTemp &>/dev/null <<EOF
+*/5 * * * * /usr/bin/aws s3 sync /home/${svc_account}/.config/unity3d/IronGate/Valheim/worlds/ s3://${game-data-bucket-name}/
 EOF
 
 # Install crontemp
-echo "Install crontemp - sudo -u svc_valheim crontab $valheimPath/AWSS3SyncCronTemp"
-sudo -u svc_valheim crontab $valheimPath/AWSS3SyncCronTemp
+echo "Install crontemp - sudo -u ${svc_account} crontab $valheimPath/AWSS3SyncCronTemp"
+sudo -u ${svc_account} crontab $valheimPath/AWSS3SyncCronTemp
 
 # Verify crontab config
-echo "Verify crontab config - sudo -u svc_valheim crontab -l"
-sudo -u svc_valheim crontab -l
+echo "Verify crontab config - sudo -u ${svc_account} crontab -l"
+sudo -u ${svc_account} crontab -l
 
 
 ## Reboot
