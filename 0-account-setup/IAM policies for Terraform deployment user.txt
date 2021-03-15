@@ -1,0 +1,48 @@
+valheim-server-budget-policy
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "budgets:ViewBudget",
+                "budgets:DescribeBudgetActionsForBudget",
+                "budgets:ModifyBudget"
+            ],
+            "Resource": "arn:aws:budgets::861106365932:budget/*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "budgets:CreateBudgetAction",
+                "budgets:ExecuteBudgetAction",
+                "budgets:DescribeBudgetAction",
+                "budgets:DeleteBudgetAction",
+                "budgets:UpdateBudgetAction"
+            ],
+            "Resource": "arn:aws:budgets::861106365932:budget/*/action/*"
+        }
+    ]
+}
+
+valheim-server-terraform-state-policy
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::valheim-server-terraform-state/*",
+                "arn:aws:s3:::valheim-server-terraform-state"
+            ]
+        }
+    ]
+}

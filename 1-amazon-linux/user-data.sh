@@ -88,12 +88,12 @@ sudo cat /etc/cron.d/sysstat
 echo "Log starting sysctl.conf - sudo cat /etc/sysctl.conf"
 sudo cat /etc/sysctl.conf
 
-# Append vm.overcommit configs to sysctl.conf
-echo "Append vm.overcommit configs to sysctl.conf - sudo tee -ia /etc/sysctl.conf &>/dev/null"
-sudo tee -ia /etc/sysctl.conf &>/dev/null <<EOF
-vm.overcommit_ratio=100
-vm.overcommit_memory=2
-EOF
+# # Append vm.overcommit configs to sysctl.conf
+# echo "Append vm.overcommit configs to sysctl.conf - sudo tee -ia /etc/sysctl.conf &>/dev/null"
+# sudo tee -ia /etc/sysctl.conf &>/dev/null <<EOF
+# vm.overcommit_ratio=100
+# vm.overcommit_memory=2
+# EOF
 
 # Verify sysctl.conf
 echo "Verify sysctl.conf - sudo cat /etc/sysctl.conf"
